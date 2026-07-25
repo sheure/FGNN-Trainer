@@ -6,7 +6,7 @@ import torch
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 from rdkit import Chem
-from rdkit.Chem.Draw import rdMolDraw2D
+#from rdkit.Chem.Draw import rdMolDraw2D
 from torch import nn
 from torch_geometric.explain import PGExplainer
 #from search import serach
@@ -123,101 +123,101 @@ class GAT(nn.Module):
                 p = self.out_at(mole_out[i], edge_index)
                 out.append(p)
             out = torch.stack(out, dim=0)
-            if self.args.is_explain:
-                config = explain.ModelConfig(mode='regression', task_level='graph', return_type='raw')
-                #
-                #
-                # explainer = explain.Explainer(model, algorithm=GNNExplainer(),
-                #                               explanation_type="model",
-                #                               model_config=config,
-                #                               edge_mask_type='object'
-                #                               ,node_mask_type='object')
-                model = deepcopy(self.out_at)
-                # explainer = explain.Explainer(
-                #     model=self.out_at,
-                #     algorithm=PGExplainer(epochs=100, lr=0.003).cuda(),
-                #     explanation_type='phenomenon',
-                #     edge_mask_type='object',
-                #
-                #
-                #     model_config=config,
-                # )
-                explainer = explain.Explainer(
-                    model=self.out_at,
-                    algorithm=PGExplainer(epochs=30, lr=0.0001).cuda(),
-                    explanation_type='phenomenon',
-                    edge_mask_type='object',
+            # if self.args.is_explain:
+            #     config = explain.ModelConfig(mode='regression', task_level='graph', return_type='raw')
+            #     #
+            #     #
+            #     # explainer = explain.Explainer(model, algorithm=GNNExplainer(),
+            #     #                               explanation_type="model",
+            #     #                               model_config=config,
+            #     #                               edge_mask_type='object'
+            #     #                               ,node_mask_type='object')
+            #     model = deepcopy(self.out_at)
+            #     # explainer = explain.Explainer(
+            #     #     model=self.out_at,
+            #     #     algorithm=PGExplainer(epochs=100, lr=0.003).cuda(),
+            #     #     explanation_type='phenomenon',
+            #     #     edge_mask_type='object',
+            #     #
+            #     #
+            #     #     model_config=config,
+            #     # )
+            #     explainer = explain.Explainer(
+            #         model=self.out_at,
+            #         algorithm=PGExplainer(epochs=30, lr=0.0001).cuda(),
+            #         explanation_type='phenomenon',
+            #         edge_mask_type='object',
 
-                    model_config=config,
-                )
-                # 针对各种节点级别或图级别的预测进行训练:
-                for epoch in range(30):
+            #         model_config=config,
+            #     )
+            #     # 针对各种节点级别或图级别的预测进行训练:
+            #     for epoch in range(30):
 
-                    for index in range(len(mole_out)):  # Indices to train against.
+            #         for index in range(len(mole_out)):  # Indices to train against.
 
-                        edge_index = torch.nonzero(adj[index], as_tuple=False).t().contiguous()
-                        # loss = explainer.algorithm.train(epoch, self.out_at, mole_out[index], edge_index,
-                        #
-                        #                                  target=None, index=index)
+            #             edge_index = torch.nonzero(adj[index], as_tuple=False).t().contiguous()
+            #             # loss = explainer.algorithm.train(epoch, self.out_at, mole_out[index], edge_index,
+            #             #
+            #             #                                  target=None, index=index)
 
-                        x = deepcopy(mole_out[index].detach())
-                        edge_index = deepcopy(edge_index.detach().to(self.args.device))
-                        target = deepcopy(out[index].detach())
-                        loss = explainer.algorithm.train(epoch, model, x, edge_index, target=target)
-                       # print(loss)
-                        # print(loss)
-                mols=deepcopy(mole_out.detach())
-                target=deepcopy(out.detach())
-                for i in range(len(mols)):
-                    try:
-                        if serach(smiles[i]):
-                            print(no[i])
-                        else:
-                            continue
-                        edge_index = torch.nonzero(adj[i], as_tuple=False).t().contiguous()
-                        if not  os.path.exists(self.args.task_name):
-                           os.makedirs(self.args.task_name)
-                        path = os.path.join(self.args.task_name, f'{no[i]}.png')
+            #             x = deepcopy(mole_out[index].detach())
+            #             edge_index = deepcopy(edge_index.detach().to(self.args.device))
+            #             target = deepcopy(out[index].detach())
+            #             loss = explainer.algorithm.train(epoch, model, x, edge_index, target=target)
+            #            # print(loss)
+            #             # print(loss)
+            #     mols=deepcopy(mole_out.detach())
+            #     target=deepcopy(out.detach())
+            #     for i in range(len(mols)):
+            #         try:
+            #             if serach(smiles[i]):
+            #                 print(no[i])
+            #             else:
+            #                 continue
+            #             edge_index = torch.nonzero(adj[i], as_tuple=False).t().contiguous()
+            #             if not  os.path.exists(self.args.task_name):
+            #                os.makedirs(self.args.task_name)
+            #             path = os.path.join(self.args.task_name, f'{no[i]}.png')
 
 
-                        explanation = explainer(mols[i], edge_index, target=target[i], index=0)
-                        explanation.visualize_graph(path)
-                        mask = explanation.stores[0]['edge_mask']
-                        mol = Chem.MolFromSmiles(smiles[i])
+            #             explanation = explainer(mols[i], edge_index, target=target[i], index=0)
+            #             explanation.visualize_graph(path)
+            #             mask = explanation.stores[0]['edge_mask']
+            #             mol = Chem.MolFromSmiles(smiles[i])
 
-                        min_value = mask.min()
-                        max_value = mask.max()
-                        norm = matplotlib.colors.Normalize(vmin=min_value, vmax=max_value)
-                        cmap = cm.get_cmap('Oranges')
-                        custom_colors = ['#FFFFFF','#FACCFF','#DCB0FF','#BE93FD','#A178DF','#845EC2','#250B65']
-                        bond_colors = {}
-                        bond_list = []
-                        # 创建自定义颜色映射
-                        custom_cmap = ListedColormap(custom_colors)
-                        cmap = cm.get_cmap('plasma')
-                        cmap = cm.get_cmap('viridis')
-                        cmap = cm.get_cmap('cool')
-                        #plt_colors = cm.ScalarMappable(norm=norm, cmap=cmap.reversed())
-                        plt_colors = cm.ScalarMappable(norm=norm, cmap=custom_cmap)
-                        for j in range(edge_index.shape[1]):
-                            a, b = int(edge_index[0, j].cpu()), int(edge_index[1, j].cpu())
-                            bond = mol.GetBondBetweenAtoms(a, b).GetIdx()
-                            bond_list.append(bond)
-                            bond_color = plt_colors.to_rgba(mask[j].cpu())
-                            bond_colors[bond] = bond_color
-                        drawer = rdMolDraw2D.MolDraw2DCairo(300, 150)
-                        rdMolDraw2D.PrepareAndDrawMolecule(drawer, mol,
-                                                           highlightBonds=bond_list,
-                                                           highlightBondColors=bond_colors,
-                                                           )
+            #             min_value = mask.min()
+            #             max_value = mask.max()
+            #             norm = matplotlib.colors.Normalize(vmin=min_value, vmax=max_value)
+            #             cmap = cm.get_cmap('Oranges')
+            #             custom_colors = ['#FFFFFF','#FACCFF','#DCB0FF','#BE93FD','#A178DF','#845EC2','#250B65']
+            #             bond_colors = {}
+            #             bond_list = []
+            #             # 创建自定义颜色映射
+            #             custom_cmap = ListedColormap(custom_colors)
+            #             cmap = cm.get_cmap('plasma')
+            #             cmap = cm.get_cmap('viridis')
+            #             cmap = cm.get_cmap('cool')
+            #             #plt_colors = cm.ScalarMappable(norm=norm, cmap=cmap.reversed())
+            #             plt_colors = cm.ScalarMappable(norm=norm, cmap=custom_cmap)
+            #             for j in range(edge_index.shape[1]):
+            #                 a, b = int(edge_index[0, j].cpu()), int(edge_index[1, j].cpu())
+            #                 bond = mol.GetBondBetweenAtoms(a, b).GetIdx()
+            #                 bond_list.append(bond)
+            #                 bond_color = plt_colors.to_rgba(mask[j].cpu())
+            #                 bond_colors[bond] = bond_color
+            #             drawer = rdMolDraw2D.MolDraw2DCairo(300, 150)
+            #             rdMolDraw2D.PrepareAndDrawMolecule(drawer, mol,
+            #                                                highlightBonds=bond_list,
+            #                                                highlightBondColors=bond_colors,
+            #                                                )
 
-                        path = os.path.join(self.args.task_name, f'{no[i]}_1.png')
-                        with open(path, 'wb') as file:
-                            file.write(drawer.GetDrawingText())
-                        print('writer')
-                    except Exception:
-                        print(Exception)
-                        continue
+            #             path = os.path.join(self.args.task_name, f'{no[i]}_1.png')
+            #             with open(path, 'wb') as file:
+            #                 file.write(drawer.GetDrawingText())
+            #             print('writer')
+            #         except Exception:
+            #             print(Exception)
+            #             continue
         else:
             out = []
 
