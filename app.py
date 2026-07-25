@@ -1,6 +1,16 @@
 import streamlit as st
 import subprocess
 import sys
+def install_package(package_name):
+    try:
+        __import__(package_name.replace("-", "_"))
+    except ImportError:
+        print(f"正在安装 {package_name}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+
+install_package("torch-geometric")
+install_package("mrmr-selection")
+install_package("rdkit-pypi")   # ← 新加的
 import os
 import threading
 import time
