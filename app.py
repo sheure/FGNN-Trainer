@@ -10,7 +10,6 @@ def install_package(package_name):
 
 install_package("torch-geometric")
 install_package("mrmr-selection")
-install_package("rdkit-pypi")   # ← 新加的
 import os
 import threading
 import time
