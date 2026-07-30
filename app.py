@@ -1,108 +1,110 @@
 import streamlit as st
 import subprocess
 import sys
-# def install_package(package_name):
-#     try:
-#         __import__(package_name.replace("-", "_"))
-#     except ImportError:
-#         print(f"正在安装 {package_name}...")
-#         subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
-
-# install_package("torch-geometric")
-# install_package("mrmr-selection")
 import os
-import threading
-import time
-import shutil
 
 st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
-st.title("模型训练器（基于你的 train.py）")
+st.title("模型训练器（必须上传自定义数据）")
 
 st.sidebar.header("数据与模型配置")
 
-# 获取 dataset 目录下已有任务
-dataset_path = "dataset"
-if os.path.exists(dataset_path):
-    available_tasks = [d for d in os.listdir(dataset_path) if
-                       os.path.isdir(os.path.join(dataset_path, d)) and os.path.exists(
-                           os.path.join(dataset_path, d, "train.csv"))]
-else:
-    available_tasks = []
+# ---------- 文件上传（必须） ----------
+uploaded_file = st.sidebar.file_uploader(
+    "上传训练数据 (CSV)",
+    type=["csv"],
+    help="请上传 CSV 文件，必须包含 SMILES 和标签列。"
+)
 
-task_name = st.sidebar.text_input("任务名称 (Task Name)", value="hiv" if "hiv" in available_tasks else "")
-if available_tasks:
-    st.sidebar.write("检测到已有数据集:", ", ".join(available_tasks))
-st.sidebar.caption("要求：dataset/{任务名}/train.csv 必须存在")
+# 如果上传了文件，显示文件名
+if uploaded_file is not None:
+    st.sidebar.success(f"已上传文件：{uploaded_file.name}")
 
-# 训练参数（与你的 train.py 对应）
+# ---------- 任务名称输入（必须手动填写） ----------
+task_name = st.sidebar.text_input("任务名称 (Task Name)", value="", help="例如：my_task，将作为模型保存的文件夹名")
+st.sidebar.caption("任务名称必须手动输入，且不能为空")
+
+# ---------- 训练超参数 ----------
 with st.sidebar.expander("训练超参数"):
     epochs = st.number_input("训练轮数 (Epochs)", min_value=1, max_value=500, value=100, step=10)
     lr = st.number_input("学习率 (Learning Rate)", min_value=0.0001, max_value=0.01, value=0.001, format="%.4f")
     batch_size = st.number_input("批次大小 (Batch Size)", min_value=16, max_value=256, value=64, step=16)
-    fp_dim = st.selectbox("指纹维度 (FP Dim)", options=[512, 700, 1024, 2513], index=3)  # 默认2513
+    fp_dim = st.selectbox("指纹维度 (FP Dim)", options=[512, 700, 1024, 2513], index=3)
     split_type = st.selectbox("划分方式 (Split Type)", options=["random", "scaffold"], index=0)
     noise_rate = st.slider("噪声率 (Noise Rate)", 0.0, 0.5, 0.0, 0.05)
 
 st.sidebar.markdown("---")
+
+# ---------- 训练按钮 ----------
 if st.sidebar.button("开始训练", type="primary"):
+    # 1. 检查是否上传了文件
+    if uploaded_file is None:
+        st.error("请先上传 CSV 数据文件！")
+        st.stop()
+
+    # 2. 检查任务名称是否填写
     if not task_name:
         st.error("请先输入任务名称！")
+        st.stop()
+
+    # 3. 处理数据文件：将上传文件保存到 dataset/{task_name}/train.csv
+    data_file = f"dataset/{task_name}/train.csv"
+    try:
+        os.makedirs(f"dataset/{task_name}", exist_ok=True)
+        with open(data_file, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.success(f"已将上传文件保存到 {data_file}")
+    except Exception as e:
+        st.error(f"保存上传文件失败：{e}")
+        st.stop()
+
+    # 4. 创建 graph 目录
+    graph_path = f"graph/{task_name}"
+    if not os.path.exists(graph_path):
+        os.makedirs(graph_path, exist_ok=True)
+        st.info(f"创建图缓存目录：{graph_path}")
+
+    # 5. 构造命令行（只包含必要的参数）
+    cmd = [
+        sys.executable,
+        "train.py",
+        "--task_name", task_name,
+        "--epochs", str(epochs),
+        "--lr", str(lr),
+        "--batch_size", str(batch_size),
+        "--fp_dim", str(fp_dim),
+        "--split_type", split_type,
+        "--noise_rate", str(noise_rate),
+        "--graph_path", graph_path,
+    ]
+
+    st.code(" ".join(cmd), language="bash")
+    st.info("正在启动训练，训练日志将实时显示在下方（GNN训练较慢，请耐心等待）...")
+
+    # 6. 执行训练并实时显示日志
+    log_placeholder = st.empty()
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        cwd=os.getcwd()
+    )
+
+    log_text = ""
+    with st.spinner("训练进行中..."):
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                log_text += line
+                lines = log_text.split('\n')
+                if len(lines) > 100:
+                    lines = lines[-100:]
+                    log_text = '\n'.join(lines)
+                log_placeholder.code(log_text, language="bash")
+        process.wait()
+
+    if process.returncode == 0:
+        st.success(f"训练完成！模型已保存到 model_save/{task_name}/")
     else:
-        data_file = f"dataset/{task_name}/train.csv"
-        if not os.path.exists(data_file):
-            st.error(f"找不到数据文件：{data_file}，请先放置训练数据！")
-        else:
-            st.success(f"数据文件已找到：{data_file}")
-
-            # 自动创建 graph 目录（如果不存在）
-            graph_path = f"graph/{task_name}"
-            if not os.path.exists(graph_path):
-                os.makedirs(graph_path, exist_ok=True)
-                st.info(f"创建图缓存目录：{graph_path}")
-
-            # 构造命令行参数（与你的 train.py 完全匹配）
-            cmd = [
-                sys.executable,
-                "train.py",
-                "--task_name", task_name,
-                "--epochs", str(epochs),
-                "--lr", str(lr),
-                "--batch_size", str(batch_size),
-                "--fp_dim", str(fp_dim),
-                "--split_type", split_type,
-                "--noise_rate", str(noise_rate),
-                "--graph_path", graph_path,
-            ]
-
-            st.code(" ".join(cmd), language="bash")
-            st.info("正在启动训练，训练日志将实时显示在下方（GNN训练较慢，请耐心等待）...")
-
-            log_placeholder = st.empty()
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                cwd=os.getcwd()
-            )
-
-            log_text = ""
-            with st.spinner("训练进行中..."):
-                for line in iter(process.stdout.readline, ''):
-                    if line:
-                        log_text += line
-                        # 只保留最近 100 行，防止页面卡顿
-                        lines = log_text.split('\n')
-                        if len(lines) > 100:
-                            lines = lines[-100:]
-                            log_text = '\n'.join(lines)
-                        log_placeholder.code(log_text, language="bash")
-
-                process.wait()
-
-            if process.returncode == 0:
-                st.success(f"训练完成！模型已保存到 model_save/{task_name}/")
-            else:
-                st.error(f"训练异常退出，错误码：{process.returncode}")
-                st.code(log_text, language="bash")
+        st.error(f"训练异常退出，错误码：{process.returncode}")
+        st.code(log_text, language="bash")
