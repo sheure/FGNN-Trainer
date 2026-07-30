@@ -27,7 +27,7 @@ class GATLayerWithRNNAndWeight(nn.Module):
         self.fc_out = nn.Linear(args.gat_ci_out*2  + out_features, args.gat_layer1_out_dim)
         self.fcc = nn.Linear(out_features, 1)
 
-        self.fc_c = nn.RNN(args.max_atom, args.gat_ci_out , batch_first=True, bidirectional=True)
+        self.fc_c = nn.RNN(int(args.max_atom), args.gat_ci_out, batch_first=True, bidirectional=True)
 
 
     def forward(self, input, adj, weight, smiles=None, no=None):
