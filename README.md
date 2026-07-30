@@ -1,3 +1,15 @@
+---
+title: FGNN 分子性质预测训练平台
+emoji: 🧪
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: 1.23.1
+app_file: app.py
+pinned: false
+---
+
+
 # FGNN
 
 ## Introduction
