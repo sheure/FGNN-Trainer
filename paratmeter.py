@@ -89,6 +89,7 @@ def add_train_argument():
     return p
 
 def set_hyper_parameter(args):
+    hyperp = {}
     if args.task_name=='bbbp' :#(0.9500151751185009, 0.015502028605851896, 0.953527524730827, 0.015058844456749492)
         if args.split_type=='random':
             hyperp = {'dropout': 0.3, 'lr': 0.001, 'gqmnn_hidden_dim1': 300,
@@ -1048,7 +1049,32 @@ def set_hyper_parameter(args):
                   'gqmnn_hidden_dim3': 485, 'fpn_hidden_dim': 419, 'gat_ci_out': 89, 'gat_e_out_dim': 197,
                   'weight_decay': 9.11e-05, 'fpn_dropout': 0.67, 'fpn_out_dim': 442, 'gnn_dropout': 0.3, 'nheads': 2,
                   'ratio': 0.19, 'gat_layer1_out_dim': 56}
-
+    if not hyperp:
+        # 使用用户传入的参数作为默认值
+        hyperp = {
+            'labels': ['Class'],
+            'dataset_type': 'classification',
+            'fp_dim': args.fp_dim,
+            'batch_size': args.batch_size,
+            'lr': args.lr,
+            'epochs': args.epochs,
+            'dropout': 0.3,
+            'gnn_dropout': 0.25,
+            'nheads': 5,
+            'ratio': 0.5,
+            'gat_layer1_out_dim': 80,
+            'weight_decay': 1e-6,
+            'fpn_dropout': 0.6,
+            'fpn_out_dim': 600,
+            'fpn_hidden_dim': 680,
+            'gat_ci_out': 100,
+            'gat_e_out_dim': 80,
+            'gqmnn_hidden_dim1': 300,
+            'gqmnn_hidden_dim2': 110,
+            'gqmnn_hidden_dim3': 32,
+            'dn_out_dim': 230,
+        }
+        print(f"任务 '{args.task_name}' 没有预定义超参数，使用默认配置")
     for key, value in hyperp.items():
         setattr(args, key, value)
     args.max_atom=0
