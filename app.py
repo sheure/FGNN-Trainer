@@ -1,6 +1,22 @@
 import streamlit as st
 import subprocess
 import sys
+print("=== app.py 启动 ===", flush=True)
+print(f"Python 版本: {sys.version}", flush=True)
+print(f"当前工作目录: {os.getcwd()}", flush=True)
+
+# 尝试导入 train.py 中的关键模块，提前发现缺失的依赖
+try:
+    import torch
+    print(f"torch 版本: {torch.__version__}", flush=True)
+except ImportError as e:
+    print(f"torch 导入失败: {e}", flush=True)
+
+try:
+    import numpy as np
+    print(f"numpy 版本: {np.__version__}", flush=True)
+except ImportError as e:
+    print(f"numpy 导入失败: {e}", flush=True)
 import os
 
 st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
