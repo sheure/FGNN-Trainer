@@ -25,7 +25,6 @@ try:
 except ImportError as e:
     print(f"numpy 导入失败: {e}", flush=True)
 
-st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
 st.title("模型训练器（必须上传自定义数据）")
 
 st.sidebar.header("数据与模型配置")
