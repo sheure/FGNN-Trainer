@@ -1,6 +1,7 @@
 import streamlit as st
 import subprocess
 import sys
+import os
 print("=== app.py 启动 ===", flush=True)
 print(f"Python 版本: {sys.version}", flush=True)
 print(f"当前工作目录: {os.getcwd()}", flush=True)
@@ -17,7 +18,6 @@ try:
     print(f"numpy 版本: {np.__version__}", flush=True)
 except ImportError as e:
     print(f"numpy 导入失败: {e}", flush=True)
-import os
 
 st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
 st.title("模型训练器（必须上传自定义数据）")
