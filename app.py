@@ -2,6 +2,12 @@ import streamlit as st
 import subprocess
 import sys
 import os
+
+# 禁止自动重载（防止无限重载循环）
+if os.getenv("STREAMLIT_SERVER_RUN_ON_SAVE") is None:
+    os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
+
+st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
 print("=== app.py 启动 ===", flush=True)
 print(f"Python 版本: {sys.version}", flush=True)
 print(f"当前工作目录: {os.getcwd()}", flush=True)
