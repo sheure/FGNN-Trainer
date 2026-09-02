@@ -3,45 +3,51 @@ import subprocess
 import sys
 import os
 
-# 禁止自动重载（防止无限重载循环）
-if os.getenv("STREAMLIT_SERVER_RUN_ON_SAVE") is None:
-    os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
+# ---------- 强制禁用自动重载（必须放在最前面） ----------
+os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
+os.environ["STREAMLIT_SERVER_WATCH_DIRS"] = "false"
 
+# ---------- 设置页面 ----------
 st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
-print("=== app.py 启动 ===", flush=True)
-print(f"Python 版本: {sys.version}", flush=True)
-print(f"当前工作目录: {os.getcwd()}", flush=True)
 
-# 尝试导入 train.py 中的关键模块，提前发现缺失的依赖
-try:
-    import torch
-    print(f"torch 版本: {torch.__version__}", flush=True)
-except ImportError as e:
-    print(f"torch 导入失败: {e}", flush=True)
+# ---------- 启动锁 ----------
+if "app_started" not in st.session_state:
+    st.session_state.app_started = True
+    print("=== app.py 首次启动 ===", flush=True)
+    print(f"Python 版本: {sys.version}", flush=True)
+    print(f"当前工作目录: {os.getcwd()}", flush=True)
+    
+    try:
+        import torch
+        print(f"torch 版本: {torch.__version__}", flush=True)
+    except ImportError as e:
+        print(f"torch 导入失败: {e}", flush=True)
+    
+    try:
+        import numpy as np
+        print(f"numpy 版本: {np.__version__}", flush=True)
+    except ImportError as e:
+        print(f"numpy 导入失败: {e}", flush=True)
+else:
+    print("=== app.py 已启动，跳过重复执行 ===", flush=True)
 
-try:
-    import numpy as np
-    print(f"numpy 版本: {np.__version__}", flush=True)
-except ImportError as e:
-    print(f"numpy 导入失败: {e}", flush=True)
-
+# ---------- 主界面 ----------
 st.title("模型训练器（必须上传自定义数据）")
 
 st.sidebar.header("数据与模型配置")
 
-# ---------- 文件上传（必须） ----------
+# ---------- 文件上传 ----------
 uploaded_file = st.sidebar.file_uploader(
     "上传训练数据 (CSV)",
     type=["csv"],
     help="请上传 CSV 文件，必须包含 SMILES 和标签列。"
 )
 
-# 如果上传了文件，显示文件名
 if uploaded_file is not None:
     st.sidebar.success(f"已上传文件：{uploaded_file.name}")
 
-# ---------- 任务名称输入（必须手动填写） ----------
-task_name = st.sidebar.text_input("任务名称 (Task Name)", value="", help="例如：my_task，将作为模型保存的文件夹名")
+# ---------- 任务名称输入 ----------
+task_name = st.sidebar.text_input("任务名称 (Task Name)", value="", help="例如：my_task")
 st.sidebar.caption("任务名称必须手动输入，且不能为空")
 
 # ---------- 训练超参数 ----------
@@ -57,17 +63,14 @@ st.sidebar.markdown("---")
 
 # ---------- 训练按钮 ----------
 if st.sidebar.button("开始训练", type="primary"):
-    # 1. 检查是否上传了文件
     if uploaded_file is None:
         st.error("请先上传 CSV 数据文件！")
         st.stop()
 
-    # 2. 检查任务名称是否填写
     if not task_name:
         st.error("请先输入任务名称！")
         st.stop()
 
-    # 3. 处理数据文件：将上传文件保存到 dataset/{task_name}/train.csv
     data_file = f"dataset/{task_name}/train.csv"
     try:
         os.makedirs(f"dataset/{task_name}", exist_ok=True)
@@ -78,13 +81,11 @@ if st.sidebar.button("开始训练", type="primary"):
         st.error(f"保存上传文件失败：{e}")
         st.stop()
 
-    # 4. 创建 graph 目录
     graph_path = f"graph/{task_name}"
     if not os.path.exists(graph_path):
         os.makedirs(graph_path, exist_ok=True)
         st.info(f"创建图缓存目录：{graph_path}")
 
-    # 5. 构造命令行（只包含必要的参数）
     cmd = [
         sys.executable,
         "train.py",
@@ -99,9 +100,8 @@ if st.sidebar.button("开始训练", type="primary"):
     ]
 
     st.code(" ".join(cmd), language="bash")
-    st.info("正在启动训练，训练日志将实时显示在下方（GNN训练较慢，请耐心等待）...")
+    st.info("正在启动训练，训练日志将实时显示在下方...")
 
-    # 6. 执行训练并实时显示日志
     log_placeholder = st.empty()
     process = subprocess.Popen(
         cmd,
