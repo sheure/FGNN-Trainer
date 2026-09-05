@@ -1,6 +1,5 @@
 import os
 os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
-os.environ["STREAMLIT_SERVER_WATCH_DIRS"] = "false"
 
 import streamlit as st
 import subprocess
