@@ -126,5 +126,4 @@ if st.sidebar.button("开始训练", type="primary"):
         st.success(f"训练完成！模型已保存到 model_save/{task_name}/")
     else:
         st.error(f"训练异常退出，错误码：{process.returncode}")
-        st.code(log_text, language="bash")出，错误码：{process.returncode}")
         st.code(log_text, language="bash")
