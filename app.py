@@ -122,8 +122,14 @@ if st.sidebar.button("开始训练", type="primary"):
                 log_placeholder.code(log_text, language="bash")
         process.wait()
 
-    if process.returncode == 0:
+   if process.returncode == 0:
+    try:
         st.success(f"训练完成！模型已保存到 model_save/{task_name}/")
-    else:
+    except Exception as e:
+        st.error(f"训练完成但显示结果时出错：{e}")
+else:
+    try:
         st.error(f"训练异常退出，错误码：{process.returncode}")
         st.code(log_text, language="bash")
+    except Exception as e:
+        st.error(f"显示错误信息时出错：{e}")
