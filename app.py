@@ -1,11 +1,10 @@
+import os
+os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
+os.environ["STREAMLIT_SERVER_WATCH_DIRS"] = "false"
+
 import streamlit as st
 import subprocess
 import sys
-import os
-
-# ---------- 强制禁用自动重载（必须放在最前面） ----------
-os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
-os.environ["STREAMLIT_SERVER_WATCH_DIRS"] = "false"
 
 # ---------- 设置页面 ----------
 st.set_page_config(page_title="GNN 模型训练控制台", layout="wide")
@@ -128,4 +127,5 @@ if st.sidebar.button("开始训练", type="primary"):
         st.success(f"训练完成！模型已保存到 model_save/{task_name}/")
     else:
         st.error(f"训练异常退出，错误码：{process.returncode}")
+        st.code(log_text, language="bash")出，错误码：{process.returncode}")
         st.code(log_text, language="bash")
