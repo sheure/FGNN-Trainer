@@ -9,7 +9,7 @@ import time
 # app.py 所在目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # 虚拟环境里的 python.exe（按你自己实际路径改）
-PYTHON_EXE = r"D:\daima\FGNN_Project\FGNN-master\hiv_venv\Scripts\python.exe"
+PYTHON_EXE = sys.executable
 # train.py 的绝对路径
 TRAIN_SCRIPT = os.path.join(BASE_DIR, "train.py")
 
